@@ -1,0 +1,26 @@
+name: Sincronizar Tiendanube
+
+on:
+  schedule:
+    - cron: "17 */3 * * *" # cada 3 horas
+  workflow_dispatch: {}     # botón para correrlo a mano
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-audit --no-fund firebase-admin@12
+      - run: node scripts/sync.mjs
+        env:
+          TIENDANUBE_TOKEN: ${{ secrets.TIENDANUBE_TOKEN }}
+          TIENDANUBE_STORE_ID: ${{ secrets.TIENDANUBE_STORE_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

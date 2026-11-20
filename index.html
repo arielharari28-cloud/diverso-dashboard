@@ -4,22 +4,459 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Diverso</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <style>
-  body { margin:0; font-family:Inter, sans-serif; background:#fff; color:#111; }
-  .top { background:#3F2A2F; color:#fff; text-transform:uppercase; font-size:12px; letter-spacing:.08em; text-align:center; padding:8px; }
-  main { max-width:640px; margin:15vh auto; padding:0 24px; text-align:center; }
-  h1 { font-family:Poppins, sans-serif; font-weight:700; text-transform:uppercase; font-size:28px; margin:0 0 12px; }
-  p { color:#555; }
-  .tag { display:inline-block; background:#8FADC5; color:#fff; border-radius:40px; padding:4px 14px; font-size:12px; margin-bottom:16px; }
+  :root { --azul:#416096; --ciruela:#3F2A2F; --rosa:#9B5C6B; --celeste:#8FADC5; --gris:#6b6b6b; --linea:#ececec; --fondo2:#fafafa; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter, system-ui, sans-serif; background:#fff; color:#111; font-size:14px; }
+  .top { background:var(--ciruela); color:#fff; text-transform:uppercase; font-size:11px; letter-spacing:.1em; text-align:center; padding:7px 12px; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:16px 28px; border-bottom:1px solid var(--linea); gap:16px; flex-wrap:wrap; }
+  .logo { font-family:"Playfair Display", serif; font-size:26px; letter-spacing:.12em; }
+  .logo small { font-family:Inter; font-size:11px; letter-spacing:.12em; color:var(--gris); margin-left:10px; text-transform:uppercase; }
+  .user { display:flex; align-items:center; gap:12px; color:var(--gris); font-size:13px; }
+  h2 { font-family:Poppins, sans-serif; font-weight:700; text-transform:uppercase; font-size:16px; letter-spacing:.04em; margin:0 0 14px; }
+  .btn { border:0; background:var(--azul); color:#fff; border-radius:40px; padding:9px 20px; font:600 13px Inter; cursor:pointer; white-space:nowrap; }
+  .btn:hover { filter:brightness(1.1); }
+  .btn.sec { background:#fff; color:var(--azul); border:1.5px solid var(--azul); }
+  .btn.chico { padding:5px 12px; font-size:12px; }
+  .btn.peligro { background:#fff; color:var(--rosa); border:1.5px solid var(--rosa); }
+  .tabs { display:flex; gap:6px; padding:14px 28px 0; }
+  .tab { padding:9px 18px; border-radius:40px; cursor:pointer; font-weight:600; color:var(--gris); border:1.5px solid transparent; }
+  .tab.on { color:var(--azul); border-color:var(--azul); }
+  main { padding:18px 28px 60px; }
+  .barra { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  input[type=text], input[type=url], select { font:14px Inter; padding:8px 12px; border:1px solid #d8d8d8; border-radius:8px; background:#fff; color:#111; }
+  input[type=text]:focus, input[type=url]:focus, select:focus { outline:2px solid var(--celeste); border-color:var(--celeste); }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:18px; }
+  .kpi { border:1px solid var(--linea); border-radius:12px; padding:14px 16px; }
+  .kpi .l { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--gris); }
+  .kpi .v { font-family:Poppins; font-weight:700; font-size:22px; margin-top:4px; }
+  .kpi .v.rosa { color:var(--rosa); }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--gris); font-weight:600; padding:10px 8px; border-bottom:1px solid var(--linea); cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:0; background:#fff; z-index:1; }
+  th.num, td.num { text-align:right; }
+  td { padding:10px 8px; border-bottom:1px solid var(--linea); vertical-align:middle; }
+  tr:hover td { background:var(--fondo2); }
+  .foto { width:54px; height:54px; border-radius:8px; object-fit:cover; background:#f1f1f1; display:block; }
+  .nombre { font-weight:600; max-width:280px; }
+  .nombre a { color:#111; text-decoration:none; }
+  .nombre a:hover { color:var(--azul); }
+  .sub { font-size:12px; color:var(--gris); margin-top:2px; }
+  .precio { color:var(--rosa); font-weight:600; }
+  .tag { display:inline-block; background:var(--celeste); color:#fff; border-radius:40px; padding:2px 10px; font-size:11px; font-weight:600; }
+  .tag.gris { background:#e9e9e9; color:var(--gris); }
+  .tag.rosa { background:var(--rosa); }
+  td select { max-width:170px; }
+  .creat { cursor:pointer; color:var(--azul); font-weight:600; white-space:nowrap; }
+  .vacio { text-align:center; padding:50px; color:var(--gris); }
+  .login { max-width:420px; margin:14vh auto; text-align:center; padding:0 24px; }
+  .login h1 { font-family:Poppins; font-weight:700; text-transform:uppercase; font-size:24px; }
+  .login p { color:var(--gris); }
+  .err { color:var(--rosa); margin-top:16px; }
+  .modal-fondo { position:fixed; inset:0; background:rgba(20,10,12,.45); display:none; align-items:flex-start; justify-content:center; padding-top:8vh; z-index:10; }
+  .modal-fondo.on { display:flex; }
+  .modal { background:#fff; border-radius:16px; width:min(560px, 94vw); max-height:84vh; overflow:auto; padding:24px; }
+  .modal h3 { font-family:Poppins; font-weight:700; margin:0 0 4px; font-size:17px; }
+  .cr-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--linea); }
+  .cr-item a { color:var(--azul); font-weight:600; word-break:break-all; flex:1; text-decoration:none; }
+  .cr-form { display:grid; grid-template-columns:1fr 130px; gap:8px; margin-top:16px; }
+  .cr-form input[type=url] { grid-column:1 / -1; }
+  .fila-fam { display:grid; grid-template-columns:1.4fr repeat(5, 1fr) auto; gap:10px; align-items:center; padding:12px 8px; border-bottom:1px solid var(--linea); }
+  .fila-fam.cab { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--gris); font-weight:600; }
+  .fila-fam .n { font-weight:600; }
+  .lote { display:none; align-items:center; gap:10px; background:var(--fondo2); border:1px solid var(--linea); border-radius:40px; padding:6px 8px 6px 18px; }
+  .lote.on { display:flex; }
+  .estado { font-size:12px; color:var(--gris); }
+  .scroll { overflow-x:auto; }
+  @media (max-width:760px) { header, main, .tabs { padding-left:14px; padding-right:14px; } .fila-fam { grid-template-columns:1fr 1fr; } .fila-fam.cab { display:none; } }
 </style>
 </head>
 <body>
-  <div class="top">Diverso by Pili · Dashboard de familias</div>
-  <main>
-    <span class="tag">En construcción</span>
-    <h1>Dashboard Diverso</h1>
-    <p>Productos de Tiendanube, familias y creativos en un solo lugar.</p>
+<div class="top">Diverso by Pili · Dashboard de productos y familias</div>
+
+<div id="vLogin" class="login" style="display:none">
+  <div class="logo" style="margin-bottom:24px">DIVERSO</div>
+  <h1>Dashboard</h1>
+  <p>Ingresá con tu cuenta de Google autorizada.</p>
+  <button class="btn" id="btnLogin">Ingresar con Google</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<div id="vApp" style="display:none">
+  <header>
+    <div class="logo">DIVERSO<small>Dashboard</small></div>
+    <div class="user"><span id="estadoSync" class="estado"></span><span id="userMail"></span><button class="btn sec chico" id="btnSalir">Salir</button></div>
+  </header>
+  <div class="tabs">
+    <div class="tab on" data-tab="productos">Productos</div>
+    <div class="tab" data-tab="familias">Familias</div>
+  </div>
+
+  <main id="tProductos">
+    <div class="barra">
+      <input type="text" id="fBuscar" placeholder="Buscar producto…" style="min-width:220px">
+      <select id="fFamilia"></select>
+      <select id="fPeriodo">
+        <option value="7">Últimos 7 días</option>
+        <option value="30" selected>Últimos 30 días</option>
+        <option value="90">Últimos 90 días</option>
+      </select>
+      <select id="fEstado">
+        <option value="pub">Publicados</option>
+        <option value="todos">Todos</option>
+        <option value="nopub">Sin publicar</option>
+      </select>
+      <span style="flex:1"></span>
+      <button class="btn sec" id="btnExport">Exportar a Excel</button>
+    </div>
+    <div class="lote" id="lote">
+      <span id="loteN"></span>
+      <select id="loteFam"></select>
+      <button class="btn chico" id="loteOk">Asignar familia</button>
+      <button class="btn sec chico" id="loteX">Cancelar</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th style="width:28px"><input type="checkbox" id="selTodo"></th>
+          <th style="width:62px"></th>
+          <th data-ord="nombre">Producto</th>
+          <th data-ord="precio" class="num">Precio</th>
+          <th data-ord="u" class="num">Unidades</th>
+          <th data-ord="f" class="num">Facturación</th>
+          <th data-ord="stock" class="num">Stock</th>
+          <th data-ord="diasPub" class="num" title="Días desde que se creó el producto">Días publicado</th>
+          <th data-ord="diasStock" class="num" title="Cuántos días dura el stock al ritmo de venta de los últimos 30 días">Días de stock</th>
+          <th data-ord="familia">Familia</th>
+          <th>Creativos</th>
+        </tr></thead>
+        <tbody id="tabla"></tbody>
+      </table>
+    </div>
   </main>
+
+  <main id="tFamilias" style="display:none">
+    <div class="barra">
+      <input type="text" id="nuevaFam" placeholder="Nombre de la nueva familia (ej. Línea Aura)" style="min-width:300px">
+      <button class="btn" id="btnNuevaFam">Crear familia</button>
+      <span style="flex:1"></span>
+      <select id="famPeriodo">
+        <option value="7">Últimos 7 días</option>
+        <option value="30" selected>Últimos 30 días</option>
+        <option value="90">Últimos 90 días</option>
+      </select>
+    </div>
+    <div id="listaFam"></div>
+  </main>
+</div>
+
+<div class="modal-fondo" id="modal">
+  <div class="modal">
+    <h3 id="mTitulo"></h3>
+    <div class="sub" id="mSub"></div>
+    <div id="mLista" style="margin-top:12px"></div>
+    <div class="cr-form">
+      <input type="text" id="crTitulo" placeholder="Nombre del creativo (ej. Reel mesa Kioto)">
+      <select id="crTipo"><option>Drive</option><option>Anuncio Meta</option><option>Reel / video</option><option>Placa</option><option>Otro</option></select>
+      <input type="url" id="crUrl" placeholder="Link (Drive, anuncio de Meta, etc.)">
+    </div>
+    <div style="display:flex; gap:10px; margin-top:14px; justify-content:flex-end">
+      <button class="btn sec" id="mCerrar">Cerrar</button>
+      <button class="btn" id="crAgregar">Agregar creativo</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyADKd8emPpn-o--HZYAlUAz-rrsd5Ly1E8",
+  authDomain: "diverso-dashboard.firebaseapp.com",
+  projectId: "diverso-dashboard",
+  storageBucket: "diverso-dashboard.firebasestorage.app",
+  messagingSenderId: "2368867632",
+  appId: "1:2368867632:web:4e70d60d20072141c50cf5"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const pesos = (n) => n == null ? "—" : "$" + Math.round(n).toLocaleString("es-AR");
+const entero = (n) => n == null ? "—" : Math.round(n).toLocaleString("es-AR");
+
+let productos = [], familias = [], asign = {}, seleccion = new Set();
+let orden = { campo: "f", dir: -1 };
+let modalId = null, subs = [];
+
+// ---------- Login ----------
+$("btnLogin").onclick = async () => {
+  $("loginErr").textContent = "";
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { $("loginErr").textContent = "No se pudo ingresar: " + (e.code || e.message); }
+};
+$("btnSalir").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, (u) => {
+  subs.forEach((f) => f()); subs = [];
+  if (!u) { $("vLogin").style.display = "block"; $("vApp").style.display = "none"; return; }
+  $("vLogin").style.display = "none"; $("vApp").style.display = "block";
+  $("userMail").textContent = u.email;
+  const sinPermiso = (e) => {
+    if (e.code === "permission-denied") {
+      signOut(auth);
+      $("loginErr").textContent = "La cuenta " + u.email + " no está autorizada. Pedile acceso a Ariel.";
+    } else console.error(e);
+  };
+  subs.push(onSnapshot(collection(db, "productos"), (s) => { productos = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, sinPermiso));
+  subs.push(onSnapshot(collection(db, "familias"), (s) => { familias = s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre)); render(); }, sinPermiso));
+  subs.push(onSnapshot(collection(db, "asignaciones"), (s) => { asign = {}; s.docs.forEach((d) => asign[d.id] = d.data()); render(); if (modalId) renderModal(); }, sinPermiso));
+  subs.push(onSnapshot(doc(db, "sync", "estado"), (d) => {
+    const e = d.data();
+    $("estadoSync").textContent = e?.ultima ? "Actualizado " + e.ultima.toDate().toLocaleString("es-AR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "Esperando la primera sincronización";
+  }, sinPermiso));
+});
+
+// ---------- Cálculos ----------
+function metricas(p, periodo) {
+  const v = p.ventas || {};
+  const u = v["u" + periodo] || 0, f = v["f" + periodo] || 0;
+  const diasPub = p.creado ? Math.floor((Date.now() - new Date(p.creado)) / 86400000) : null;
+  const ritmo = (v.u30 || 0) / 30;
+  let diasStock = null;
+  if (!p.stockInfinito && p.stock != null) diasStock = ritmo > 0 ? p.stock / ritmo : (p.stock > 0 ? Infinity : 0);
+  return { u, f, diasPub, diasStock };
+}
+const famDe = (id) => asign[id]?.familia || "";
+const nombreFam = (fid) => familias.find((f) => f.id === fid)?.nombre || "";
+
+function filtrados() {
+  const q = $("fBuscar").value.trim().toLowerCase();
+  const fam = $("fFamilia").value, est = $("fEstado").value, per = $("fPeriodo").value;
+  return productos
+    .filter((p) => p.activo !== false)
+    .filter((p) => est === "todos" || (est === "pub" ? p.publicado : !p.publicado))
+    .filter((p) => !q || (p.nombre || "").toLowerCase().includes(q))
+    .filter((p) => fam === "" || (fam === "__sin" ? !famDe(p.id) : famDe(p.id) === fam))
+    .map((p) => ({ p, m: metricas(p, per) }));
+}
+
+// ---------- Render productos ----------
+function opcionesFam(sel, conTodas) {
+  let h = conTodas ? `<option value="">Todas las familias</option><option value="__sin">Sin familia</option>` : `<option value="">— Sin familia —</option>`;
+  for (const f of familias) h += `<option value="${f.id}" ${f.id === sel ? "selected" : ""}>${esc(f.nombre)}</option>`;
+  return h;
+}
+
+function render() {
+  const fSel = $("fFamilia").value;
+  $("fFamilia").innerHTML = opcionesFam("", true); $("fFamilia").value = fSel;
+  $("loteFam").innerHTML = opcionesFam("", false);
+
+  const filas = filtrados();
+  const val = (r) => {
+    switch (orden.campo) {
+      case "nombre": return (r.p.nombre || "").toLowerCase();
+      case "precio": return r.p.precio ?? -1;
+      case "stock": return r.p.stockInfinito ? Infinity : (r.p.stock ?? -1);
+      case "familia": return nombreFam(famDe(r.p.id)).toLowerCase() || "zzz";
+      default: return r.m[orden.campo] ?? -1;
+    }
+  };
+  filas.sort((a, b) => { const x = val(a), y = val(b); return (x > y ? 1 : x < y ? -1 : 0) * orden.dir; });
+  document.querySelectorAll("th[data-ord]").forEach((th) => {
+    th.textContent = th.textContent.replace(/ [↑↓]$/, "") + (th.dataset.ord === orden.campo ? (orden.dir > 0 ? " ↑" : " ↓") : "");
+  });
+
+  // KPIs
+  const tu = filas.reduce((s, r) => s + r.m.u, 0), tf = filas.reduce((s, r) => s + r.m.f, 0);
+  const stockTot = filas.reduce((s, r) => s + (r.p.stockInfinito ? 0 : (r.p.stock || 0)), 0);
+  const sinFam = filas.filter((r) => !famDe(r.p.id)).length;
+  $("kpis").innerHTML = `
+    <div class="kpi"><div class="l">Productos</div><div class="v">${entero(filas.length)}</div></div>
+    <div class="kpi"><div class="l">Unidades vendidas</div><div class="v">${entero(tu)}</div></div>
+    <div class="kpi"><div class="l">Facturación</div><div class="v rosa">${pesos(tf)}</div></div>
+    <div class="kpi"><div class="l">Ticket promedio por unidad</div><div class="v">${tu ? pesos(tf / tu) : "—"}</div></div>
+    <div class="kpi"><div class="l">Stock total</div><div class="v">${entero(stockTot)}</div></div>
+    <div class="kpi"><div class="l">Sin familia asignada</div><div class="v ${sinFam ? "rosa" : ""}">${entero(sinFam)}</div></div>`;
+
+  if (!productos.length) { $("tabla").innerHTML = `<tr><td colspan="11" class="vacio">Todavía no hay productos. La primera sincronización con Tiendanube puede tardar unos minutos.</td></tr>`; return; }
+  if (!filas.length) { $("tabla").innerHTML = `<tr><td colspan="11" class="vacio">Ningún producto coincide con los filtros.</td></tr>`; return; }
+
+  $("tabla").innerHTML = filas.map(({ p, m }) => {
+    const cr = asign[p.id]?.creativos?.length || 0;
+    let ds = "—";
+    if (p.stockInfinito) ds = `<span class="tag gris">Sin control</span>`;
+    else if (m.diasStock === Infinity) ds = `<span class="tag gris">Sin ventas</span>`;
+    else if (m.diasStock != null) ds = m.diasStock < 15 ? `<span class="tag rosa">${entero(m.diasStock)}</span>` : entero(m.diasStock);
+    const stock = p.stockInfinito ? "∞" : (p.stock === 0 ? `<span class="tag rosa">0</span>` : entero(p.stock));
+    return `<tr>
+      <td><input type="checkbox" data-sel="${p.id}" ${seleccion.has(p.id) ? "checked" : ""}></td>
+      <td>${p.foto ? `<img class="foto" src="${esc(p.foto)}" loading="lazy" alt="">` : `<div class="foto"></div>`}</td>
+      <td><div class="nombre">${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.nombre)}</a>` : esc(p.nombre)}</div>
+          <div class="sub">${esc((p.categorias || []).join(" · "))}${p.publicado ? "" : ' <span class="tag gris">Sin publicar</span>'}</div></td>
+      <td class="num precio">${pesos(p.precio)}</td>
+      <td class="num">${entero(m.u)}</td>
+      <td class="num">${pesos(m.f)}</td>
+      <td class="num">${stock}</td>
+      <td class="num">${entero(m.diasPub)}</td>
+      <td class="num">${ds}</td>
+      <td><select data-fam="${p.id}">${opcionesFam(famDe(p.id), false)}</select></td>
+      <td><span class="creat" data-cr="${p.id}">${cr ? cr + " creativo" + (cr > 1 ? "s" : "") : "+ Agregar"}</span></td>
+    </tr>`;
+  }).join("");
+  actualizarLote();
+  if ($("tFamilias").style.display !== "none") renderFamilias();
+}
+
+// ---------- Eventos de la tabla ----------
+["fBuscar", "fFamilia", "fPeriodo", "fEstado"].forEach((id) => $(id).addEventListener("input", render));
+document.querySelectorAll("th[data-ord]").forEach((th) => th.onclick = () => {
+  const c = th.dataset.ord;
+  orden = { campo: c, dir: orden.campo === c ? -orden.dir : (c === "nombre" || c === "familia" || c === "diasStock" ? 1 : -1) };
+  render();
+});
+
+const quien = () => auth.currentUser?.email || "";
+$("tabla").addEventListener("change", async (e) => {
+  const t = e.target;
+  if (t.dataset.fam) {
+    await setDoc(doc(db, "asignaciones", t.dataset.fam), { familia: t.value || null, actualizado: serverTimestamp(), por: quien() }, { merge: true });
+  }
+  if (t.dataset.sel) { t.checked ? seleccion.add(t.dataset.sel) : seleccion.delete(t.dataset.sel); actualizarLote(); }
+});
+$("tabla").addEventListener("click", (e) => { const id = e.target.dataset.cr; if (id) abrirModal(id); });
+
+// ---------- Asignación en lote ----------
+$("selTodo").onchange = (e) => { filtrados().forEach(({ p }) => e.target.checked ? seleccion.add(p.id) : seleccion.delete(p.id)); render(); };
+function actualizarLote() {
+  $("lote").classList.toggle("on", seleccion.size > 0);
+  $("loteN").textContent = seleccion.size + " seleccionado" + (seleccion.size > 1 ? "s" : "");
+}
+$("loteX").onclick = () => { seleccion.clear(); $("selTodo").checked = false; render(); };
+$("loteOk").onclick = async () => {
+  const fam = $("loteFam").value || null;
+  const ids = [...seleccion];
+  for (let i = 0; i < ids.length; i += 400) {
+    const b = writeBatch(db);
+    ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { familia: fam, actualizado: serverTimestamp(), por: quien() }, { merge: true }));
+    await b.commit();
+  }
+  seleccion.clear(); $("selTodo").checked = false; render();
+};
+
+// ---------- Creativos ----------
+function abrirModal(id) { modalId = id; renderModal(); $("modal").classList.add("on"); $("crTitulo").focus(); }
+function renderModal() {
+  const p = productos.find((x) => x.id === modalId); if (!p) return;
+  $("mTitulo").textContent = p.nombre;
+  $("mSub").textContent = nombreFam(famDe(p.id)) || "Sin familia";
+  const lista = asign[p.id]?.creativos || [];
+  $("mLista").innerHTML = lista.length ? lista.map((c, i) => `
+    <div class="cr-item"><span class="tag">${esc(c.tipo)}</span>
+      <a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.titulo || c.url)}</a>
+      <button class="btn peligro chico" data-borrar="${i}">Quitar</button></div>`).join("")
+    : `<div class="sub">Todavía no hay creativos asignados a este producto.</div>`;
+}
+$("mLista").addEventListener("click", async (e) => {
+  const i = e.target.dataset.borrar; if (i === undefined) return;
+  const lista = [...(asign[modalId]?.creativos || [])]; lista.splice(Number(i), 1);
+  await setDoc(doc(db, "asignaciones", modalId), { creativos: lista, actualizado: serverTimestamp(), por: quien() }, { merge: true });
+});
+$("crAgregar").onclick = async () => {
+  const url = $("crUrl").value.trim(); if (!/^https?:\/\//.test(url)) { $("crUrl").focus(); return; }
+  const c = { titulo: $("crTitulo").value.trim(), tipo: $("crTipo").value, url, fecha: new Date().toISOString(), por: quien() };
+  await setDoc(doc(db, "asignaciones", modalId), { creativos: arrayUnion(c), actualizado: serverTimestamp(), por: quien() }, { merge: true });
+  $("crTitulo").value = ""; $("crUrl").value = "";
+};
+$("mCerrar").onclick = () => { $("modal").classList.remove("on"); modalId = null; };
+$("modal").onclick = (e) => { if (e.target.id === "modal") $("mCerrar").onclick(); };
+
+// ---------- Familias ----------
+document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+  const fam = t.dataset.tab === "familias";
+  $("tProductos").style.display = fam ? "none" : "block";
+  $("tFamilias").style.display = fam ? "block" : "none";
+  if (fam) renderFamilias();
+});
+$("famPeriodo").oninput = renderFamilias;
+$("btnNuevaFam").onclick = async () => {
+  const n = $("nuevaFam").value.trim(); if (!n) return;
+  if (familias.some((f) => f.nombre.toLowerCase() === n.toLowerCase())) { $("nuevaFam").select(); return; }
+  await addDoc(collection(db, "familias"), { nombre: n, creada: serverTimestamp(), por: quien() });
+  $("nuevaFam").value = "";
+};
+$("nuevaFam").onkeydown = (e) => { if (e.key === "Enter") $("btnNuevaFam").onclick(); };
+
+function renderFamilias() {
+  const per = $("famPeriodo").value;
+  const act = productos.filter((p) => p.activo !== false);
+  const grupos = [...familias.map((f) => ({ id: f.id, nombre: f.nombre })), { id: "", nombre: "Sin familia" }].map((g) => {
+    const ps = act.filter((p) => famDe(p.id) === g.id || (!g.id && !familias.some((f) => f.id === famDe(p.id))));
+    let u = 0, f = 0, stock = 0, cr = 0;
+    ps.forEach((p) => { const m = metricas(p, per); u += m.u; f += m.f; stock += p.stockInfinito ? 0 : (p.stock || 0); cr += asign[p.id]?.creativos?.length || 0; });
+    return { ...g, n: ps.length, u, f, stock, cr };
+  });
+  $("listaFam").innerHTML = `<div class="fila-fam cab"><div>Familia</div><div>Productos</div><div>Unidades</div><div>Facturación</div><div>Ticket prom.</div><div>Stock · Creativos</div><div></div></div>` +
+    grupos.map((g) => `<div class="fila-fam">
+      <div class="n">${g.id ? esc(g.nombre) : `<span class="tag gris">${g.nombre}</span>`}</div>
+      <div>${entero(g.n)}</div><div>${entero(g.u)}</div><div class="precio">${pesos(g.f)}</div>
+      <div>${g.u ? pesos(g.f / g.u) : "—"}</div><div>${entero(g.stock)} · ${entero(g.cr)}</div>
+      <div style="display:flex; gap:6px">
+        <button class="btn sec chico" data-ver="${g.id || "__sin"}">Ver productos</button>
+        ${g.id ? `<button class="btn sec chico" data-ren="${g.id}">Renombrar</button><button class="btn peligro chico" data-del="${g.id}">Borrar</button>` : ""}
+      </div></div>`).join("");
+}
+$("listaFam").addEventListener("click", async (e) => {
+  const d = e.target.dataset;
+  if (d.ver) {
+    document.querySelector('.tab[data-tab="productos"]').click();
+    $("fFamilia").value = d.ver; $("fEstado").value = "todos"; render();
+  }
+  if (d.ren) {
+    const fila = e.target.closest(".fila-fam").querySelector(".n");
+    const actual = nombreFam(d.ren);
+    fila.innerHTML = `<input type="text" value="${esc(actual)}" style="width:100%">`;
+    const inp = fila.querySelector("input"); inp.focus(); inp.select();
+    const guardar = async () => { const n = inp.value.trim(); if (n && n !== actual) await updateDoc(doc(db, "familias", d.ren), { nombre: n }); else renderFamilias(); };
+    inp.onkeydown = (ev) => { if (ev.key === "Enter") guardar(); if (ev.key === "Escape") renderFamilias(); };
+    inp.onblur = guardar;
+  }
+  if (d.del) {
+    const btn = e.target;
+    if (btn.dataset.confirmar !== "1") { btn.dataset.confirmar = "1"; btn.textContent = "¿Seguro?"; setTimeout(() => { btn.dataset.confirmar = ""; btn.textContent = "Borrar"; }, 3000); return; }
+    const ids = Object.keys(asign).filter((id) => asign[id].familia === d.del);
+    for (let i = 0; i < ids.length; i += 400) {
+      const b = writeBatch(db);
+      ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { familia: null }, { merge: true }));
+      await b.commit();
+    }
+    await deleteDoc(doc(db, "familias", d.del));
+  }
+});
+
+// ---------- Exportar ----------
+$("btnExport").onclick = () => {
+  const per = $("fPeriodo").value;
+  const filas = [["ID", "Producto", "Categorías", "Publicado", "Precio", `Unidades ${per}d`, `Facturación ${per}d`, "Stock", "Días publicado", "Días de stock", "Familia", "Creativos", "Link"]];
+  filtrados().forEach(({ p, m }) => filas.push([
+    p.id, p.nombre, (p.categorias || []).join(" / "), p.publicado ? "Sí" : "No", p.precio ?? "",
+    m.u, Math.round(m.f), p.stockInfinito ? "Sin control" : (p.stock ?? ""), m.diasPub ?? "",
+    p.stockInfinito || m.diasStock == null ? "" : (m.diasStock === Infinity ? "Sin ventas" : Math.round(m.diasStock)),
+    nombreFam(famDe(p.id)), (asign[p.id]?.creativos || []).map((c) => `${c.titulo || c.tipo}: ${c.url}`).join(" | "), p.url || ""
+  ]));
+  const csv = "﻿" + filas.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `diverso-productos-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+};
+</script>
 </body>
 </html>
