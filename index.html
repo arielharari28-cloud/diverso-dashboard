@@ -38,7 +38,19 @@
   th.num, td.num { text-align:right; }
   td { padding:10px 8px; border-bottom:1px solid var(--linea); vertical-align:middle; }
   tr:hover td { background:var(--fondo2); }
-  .foto { width:54px; height:54px; border-radius:8px; object-fit:cover; background:#f1f1f1; display:block; }
+  .foto { width:96px; height:96px; border-radius:10px; object-fit:cover; background:#f1f1f1; display:block; cursor:zoom-in; transition:transform .15s; }
+  .foto:hover { transform:scale(1.04); }
+  .visor { position:fixed; inset:0; background:rgba(20,10,12,.8); display:none; align-items:center; justify-content:center; z-index:20; cursor:zoom-out; flex-direction:column; gap:14px; }
+  .visor.on { display:flex; }
+  .visor img { max-width:90vw; max-height:82vh; border-radius:12px; background:#fff; }
+  .visor div { color:#fff; font-weight:600; }
+  .celda-fam { display:flex; flex-direction:column; gap:6px; }
+  .subs { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:4px 8px 14px; border-bottom:1px solid var(--linea); }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:#f3f5f9; border:1px solid #dfe5ef; border-radius:40px; padding:4px 6px 4px 12px; font-size:12px; }
+  .chip b { font-weight:600; }
+  .chip span { color:var(--gris); }
+  .chip button { border:0; background:none; color:var(--rosa); cursor:pointer; font-size:14px; line-height:1; padding:0 4px; }
+  .subs input { font-size:12px; padding:5px 10px; border-radius:40px; width:190px; }
   .nombre { font-weight:600; max-width:280px; }
   .nombre a { color:#111; text-decoration:none; }
   .nombre a:hover { color:var(--azul); }
@@ -95,8 +107,9 @@
 
   <main id="tProductos">
     <div class="barra">
-      <input type="text" id="fBuscar" placeholder="Buscar producto…" style="min-width:220px">
+      <input type="text" id="fBuscar" placeholder="Buscar producto o categoría…" style="min-width:240px">
       <select id="fFamilia"></select>
+      <select id="fSub" style="display:none"></select>
       <select id="fPeriodo">
         <option value="7">Últimos 7 días</option>
         <option value="30" selected>Últimos 30 días</option>
@@ -113,6 +126,7 @@
     <div class="lote" id="lote">
       <span id="loteN"></span>
       <select id="loteFam"></select>
+      <select id="loteSub" style="display:none"></select>
       <button class="btn chico" id="loteOk">Asignar familia</button>
       <button class="btn sec chico" id="loteX">Cancelar</button>
     </div>
@@ -151,6 +165,8 @@
     <div id="listaFam"></div>
   </main>
 </div>
+
+<div class="visor" id="visor"><img id="visorImg" alt=""><div id="visorTxt"></div></div>
 
 <div class="modal-fondo" id="modal">
   <div class="modal">
@@ -233,16 +249,23 @@ function metricas(p, periodo) {
   return { u, f, diasPub, diasStock };
 }
 const famDe = (id) => asign[id]?.familia || "";
+const subDe = (id) => asign[id]?.sub || "";
 const nombreFam = (fid) => familias.find((f) => f.id === fid)?.nombre || "";
+const subsDe = (fid) => familias.find((f) => f.id === fid)?.subcategorias || [];
+function opcionesSub(fid, sel, primera) {
+  return `<option value="">${primera}</option>` + subsDe(fid).map((s) => `<option value="${esc(s)}" ${s === sel ? "selected" : ""}>${esc(s)}</option>`).join("");
+}
 
 function filtrados() {
   const q = $("fBuscar").value.trim().toLowerCase();
   const fam = $("fFamilia").value, est = $("fEstado").value, per = $("fPeriodo").value;
+  const sub = $("fSub").style.display === "none" ? "" : $("fSub").value;
   return productos
     .filter((p) => p.activo !== false)
     .filter((p) => est === "todos" || (est === "pub" ? p.publicado : !p.publicado))
-    .filter((p) => !q || (p.nombre || "").toLowerCase().includes(q))
+    .filter((p) => !q || ((p.nombre || "") + " " + (p.categorias || []).join(" ")).toLowerCase().includes(q))
     .filter((p) => fam === "" || (fam === "__sin" ? !famDe(p.id) : famDe(p.id) === fam))
+    .filter((p) => sub === "" || (sub === "__sin" ? !subDe(p.id) : subDe(p.id) === sub))
     .map((p) => ({ p, m: metricas(p, per) }));
 }
 
@@ -256,7 +279,15 @@ function opcionesFam(sel, conTodas) {
 function render() {
   const fSel = $("fFamilia").value;
   $("fFamilia").innerHTML = opcionesFam("", true); $("fFamilia").value = fSel;
-  $("loteFam").innerHTML = opcionesFam("", false);
+  const famF = $("fFamilia").value, subSel = $("fSub").value;
+  const conSubs = famF && famF !== "__sin" && subsDe(famF).length;
+  $("fSub").style.display = conSubs ? "" : "none";
+  if (conSubs) { $("fSub").innerHTML = opcionesSub(famF, "", "Todas las subcategorías") + `<option value="__sin">Sin subcategoría</option>`; $("fSub").value = subSel; if ($("fSub").selectedIndex < 0) $("fSub").value = ""; }
+  const loteSel = $("loteFam").value, loteSubSel = $("loteSub").value;
+  $("loteFam").innerHTML = opcionesFam("", false); $("loteFam").value = loteSel;
+  const loteSubs = subsDe($("loteFam").value).length;
+  $("loteSub").style.display = loteSubs ? "" : "none";
+  if (loteSubs) { $("loteSub").innerHTML = opcionesSub($("loteFam").value, "", "— Sin subcategoría —"); $("loteSub").value = loteSubSel; if ($("loteSub").selectedIndex < 0) $("loteSub").value = ""; }
 
   const filas = filtrados();
   const val = (r) => {
@@ -264,7 +295,7 @@ function render() {
       case "nombre": return (r.p.nombre || "").toLowerCase();
       case "precio": return r.p.precio ?? -1;
       case "stock": return r.p.stockInfinito ? Infinity : (r.p.stock ?? -1);
-      case "familia": return nombreFam(famDe(r.p.id)).toLowerCase() || "zzz";
+      case "familia": return (nombreFam(famDe(r.p.id)) + " " + subDe(r.p.id)).toLowerCase().trim() || "zzz";
       default: return r.m[orden.campo] ?? -1;
     }
   };
@@ -297,7 +328,7 @@ function render() {
     const stock = p.stockInfinito ? "∞" : (p.stock === 0 ? `<span class="tag rosa">0</span>` : entero(p.stock));
     return `<tr>
       <td><input type="checkbox" data-sel="${p.id}" ${seleccion.has(p.id) ? "checked" : ""}></td>
-      <td>${p.foto ? `<img class="foto" src="${esc(p.foto)}" loading="lazy" alt="">` : `<div class="foto"></div>`}</td>
+      <td>${p.foto ? `<img class="foto" src="${esc(p.foto)}" loading="lazy" alt="" data-zoom="${p.id}">` : `<div class="foto"></div>`}</td>
       <td><div class="nombre">${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.nombre)}</a>` : esc(p.nombre)}</div>
           <div class="sub">${esc((p.categorias || []).join(" · "))}${p.publicado ? "" : ' <span class="tag gris">Sin publicar</span>'}</div></td>
       <td class="num precio">${pesos(p.precio)}</td>
@@ -306,7 +337,8 @@ function render() {
       <td class="num">${stock}</td>
       <td class="num">${entero(m.diasPub)}</td>
       <td class="num">${ds}</td>
-      <td><select data-fam="${p.id}">${opcionesFam(famDe(p.id), false)}</select></td>
+      <td><div class="celda-fam"><select data-fam="${p.id}">${opcionesFam(famDe(p.id), false)}</select>
+        ${subsDe(famDe(p.id)).length ? `<select data-sub="${p.id}">${opcionesSub(famDe(p.id), subDe(p.id), "— Subcategoría —")}</select>` : ""}</div></td>
       <td><span class="creat" data-cr="${p.id}">${cr ? cr + " creativo" + (cr > 1 ? "s" : "") : "+ Agregar"}</span></td>
     </tr>`;
   }).join("");
@@ -315,7 +347,7 @@ function render() {
 }
 
 // ---------- Eventos de la tabla ----------
-["fBuscar", "fFamilia", "fPeriodo", "fEstado"].forEach((id) => $(id).addEventListener("input", render));
+["fBuscar", "fFamilia", "fSub", "fPeriodo", "fEstado", "loteFam"].forEach((id) => $(id).addEventListener("input", render));
 document.querySelectorAll("th[data-ord]").forEach((th) => th.onclick = () => {
   const c = th.dataset.ord;
   orden = { campo: c, dir: orden.campo === c ? -orden.dir : (c === "nombre" || c === "familia" || c === "diasStock" ? 1 : -1) };
@@ -326,11 +358,23 @@ const quien = () => auth.currentUser?.email || "";
 $("tabla").addEventListener("change", async (e) => {
   const t = e.target;
   if (t.dataset.fam) {
-    await setDoc(doc(db, "asignaciones", t.dataset.fam), { familia: t.value || null, actualizado: serverTimestamp(), por: quien() }, { merge: true });
+    await setDoc(doc(db, "asignaciones", t.dataset.fam), { familia: t.value || null, sub: null, actualizado: serverTimestamp(), por: quien() }, { merge: true });
+  }
+  if (t.dataset.sub) {
+    await setDoc(doc(db, "asignaciones", t.dataset.sub), { sub: t.value || null, actualizado: serverTimestamp(), por: quien() }, { merge: true });
   }
   if (t.dataset.sel) { t.checked ? seleccion.add(t.dataset.sel) : seleccion.delete(t.dataset.sel); actualizarLote(); }
 });
-$("tabla").addEventListener("click", (e) => { const id = e.target.dataset.cr; if (id) abrirModal(id); });
+$("tabla").addEventListener("click", (e) => {
+  const id = e.target.dataset.cr; if (id) abrirModal(id);
+  const z = e.target.dataset.zoom;
+  if (z) {
+    const p = productos.find((x) => x.id === z);
+    $("visorImg").src = p.foto; $("visorTxt").textContent = p.nombre; $("visor").classList.add("on");
+  }
+});
+$("visor").onclick = () => $("visor").classList.remove("on");
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("visor").classList.remove("on"); } });
 
 // ---------- Asignación en lote ----------
 $("selTodo").onchange = (e) => { filtrados().forEach(({ p }) => e.target.checked ? seleccion.add(p.id) : seleccion.delete(p.id)); render(); };
@@ -341,10 +385,11 @@ function actualizarLote() {
 $("loteX").onclick = () => { seleccion.clear(); $("selTodo").checked = false; render(); };
 $("loteOk").onclick = async () => {
   const fam = $("loteFam").value || null;
+  const sub = fam && $("loteSub").style.display !== "none" ? ($("loteSub").value || null) : null;
   const ids = [...seleccion];
   for (let i = 0; i < ids.length; i += 400) {
     const b = writeBatch(db);
-    ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { familia: fam, actualizado: serverTimestamp(), por: quien() }, { merge: true }));
+    ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { familia: fam, sub, actualizado: serverTimestamp(), por: quien() }, { merge: true }));
     await b.commit();
   }
   seleccion.clear(); $("selTodo").checked = false; render();
@@ -355,7 +400,7 @@ function abrirModal(id) { modalId = id; renderModal(); $("modal").classList.add(
 function renderModal() {
   const p = productos.find((x) => x.id === modalId); if (!p) return;
   $("mTitulo").textContent = p.nombre;
-  $("mSub").textContent = nombreFam(famDe(p.id)) || "Sin familia";
+  $("mSub").textContent = [nombreFam(famDe(p.id)) || "Sin familia", subDe(p.id)].filter(Boolean).join(" › ");
   const lista = asign[p.id]?.creativos || [];
   $("mLista").innerHTML = lista.length ? lista.map((c, i) => `
     <div class="cr-item"><span class="tag">${esc(c.tipo)}</span>
@@ -401,23 +446,60 @@ function renderFamilias() {
     const ps = act.filter((p) => famDe(p.id) === g.id || (!g.id && !familias.some((f) => f.id === famDe(p.id))));
     let u = 0, f = 0, stock = 0, cr = 0;
     ps.forEach((p) => { const m = metricas(p, per); u += m.u; f += m.f; stock += p.stockInfinito ? 0 : (p.stock || 0); cr += asign[p.id]?.creativos?.length || 0; });
-    return { ...g, n: ps.length, u, f, stock, cr };
+    // Métricas por subcategoría
+    const subs = g.id ? [...subsDe(g.id), ""].map((s) => {
+      const pss = ps.filter((p) => s ? subDe(p.id) === s : !subsDe(g.id).includes(subDe(p.id)));
+      let su = 0, sf = 0;
+      pss.forEach((p) => { const m = metricas(p, per); su += m.u; sf += m.f; });
+      return { nombre: s, n: pss.length, u: su, f: sf };
+    }) : [];
+    return { ...g, n: ps.length, u, f, stock, cr, subs };
   });
   $("listaFam").innerHTML = `<div class="fila-fam cab"><div>Familia</div><div>Productos</div><div>Unidades</div><div>Facturación</div><div>Ticket prom.</div><div>Stock · Creativos</div><div></div></div>` +
-    grupos.map((g) => `<div class="fila-fam">
+    grupos.map((g) => `<div class="fila-fam" style="${g.id ? "border-bottom:0" : ""}">
       <div class="n">${g.id ? esc(g.nombre) : `<span class="tag gris">${g.nombre}</span>`}</div>
       <div>${entero(g.n)}</div><div>${entero(g.u)}</div><div class="precio">${pesos(g.f)}</div>
       <div>${g.u ? pesos(g.f / g.u) : "—"}</div><div>${entero(g.stock)} · ${entero(g.cr)}</div>
       <div style="display:flex; gap:6px">
         <button class="btn sec chico" data-ver="${g.id || "__sin"}">Ver productos</button>
         ${g.id ? `<button class="btn sec chico" data-ren="${g.id}">Renombrar</button><button class="btn peligro chico" data-del="${g.id}">Borrar</button>` : ""}
-      </div></div>`).join("");
+      </div></div>
+      ${g.id ? `<div class="subs">
+        ${g.subs.filter((s) => s.nombre || s.n).map((s) => `<span class="chip">
+          <b data-versub="${esc(s.nombre) || "__sin"}" data-fam="${g.id}" style="cursor:pointer">${s.nombre ? esc(s.nombre) : "Sin subcategoría"}</b>
+          <span>${entero(s.n)} prod · ${entero(s.u)} u · ${pesos(s.f)}</span>
+          ${s.nombre ? `<button title="Quitar subcategoría" data-delsub="${esc(s.nombre)}" data-fam="${g.id}">×</button>` : ""}</span>`).join("")}
+        <input type="text" placeholder="+ Subcategoría (ej. Mesas, Sillas)" data-addsub="${g.id}">
+      </div>` : ""}`).join("");
 }
+$("listaFam").addEventListener("keydown", async (e) => {
+  const fid = e.target.dataset.addsub;
+  if (!fid || e.key !== "Enter") return;
+  const n = e.target.value.trim(); if (!n) return;
+  if (subsDe(fid).some((s) => s.toLowerCase() === n.toLowerCase())) { e.target.select(); return; }
+  await updateDoc(doc(db, "familias", fid), { subcategorias: arrayUnion(n) });
+});
 $("listaFam").addEventListener("click", async (e) => {
   const d = e.target.dataset;
   if (d.ver) {
     document.querySelector('.tab[data-tab="productos"]').click();
-    $("fFamilia").value = d.ver; $("fEstado").value = "todos"; render();
+    $("fFamilia").value = d.ver; $("fSub").value = ""; $("fEstado").value = "todos"; render();
+  }
+  if (d.versub) {
+    document.querySelector('.tab[data-tab="productos"]').click();
+    $("fFamilia").value = d.fam; $("fEstado").value = "todos"; render();
+    $("fSub").value = d.versub; render();
+  }
+  if (d.delsub) {
+    const btn = e.target;
+    if (btn.dataset.confirmar !== "1") { btn.dataset.confirmar = "1"; btn.textContent = "¿Seguro?"; setTimeout(() => { btn.dataset.confirmar = ""; btn.textContent = "×"; }, 3000); return; }
+    const ids = Object.keys(asign).filter((id) => asign[id].familia === d.fam && asign[id].sub === d.delsub);
+    for (let i = 0; i < ids.length; i += 400) {
+      const b = writeBatch(db);
+      ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { sub: null }, { merge: true }));
+      await b.commit();
+    }
+    await updateDoc(doc(db, "familias", d.fam), { subcategorias: subsDe(d.fam).filter((s) => s !== d.delsub) });
   }
   if (d.ren) {
     const fila = e.target.closest(".fila-fam").querySelector(".n");
@@ -434,7 +516,7 @@ $("listaFam").addEventListener("click", async (e) => {
     const ids = Object.keys(asign).filter((id) => asign[id].familia === d.del);
     for (let i = 0; i < ids.length; i += 400) {
       const b = writeBatch(db);
-      ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { familia: null }, { merge: true }));
+      ids.slice(i, i + 400).forEach((id) => b.set(doc(db, "asignaciones", id), { familia: null, sub: null }, { merge: true }));
       await b.commit();
     }
     await deleteDoc(doc(db, "familias", d.del));
@@ -444,12 +526,12 @@ $("listaFam").addEventListener("click", async (e) => {
 // ---------- Exportar ----------
 $("btnExport").onclick = () => {
   const per = $("fPeriodo").value;
-  const filas = [["ID", "Producto", "Categorías", "Publicado", "Precio", `Unidades ${per}d`, `Facturación ${per}d`, "Stock", "Días publicado", "Días de stock", "Familia", "Creativos", "Link"]];
+  const filas = [["ID", "Producto", "Categorías", "Publicado", "Precio", `Unidades ${per}d`, `Facturación ${per}d`, "Stock", "Días publicado", "Días de stock", "Familia", "Subcategoría", "Creativos", "Link"]];
   filtrados().forEach(({ p, m }) => filas.push([
     p.id, p.nombre, (p.categorias || []).join(" / "), p.publicado ? "Sí" : "No", p.precio ?? "",
     m.u, Math.round(m.f), p.stockInfinito ? "Sin control" : (p.stock ?? ""), m.diasPub ?? "",
     p.stockInfinito || m.diasStock == null ? "" : (m.diasStock === Infinity ? "Sin ventas" : Math.round(m.diasStock)),
-    nombreFam(famDe(p.id)), (asign[p.id]?.creativos || []).map((c) => `${c.titulo || c.tipo}: ${c.url}`).join(" | "), p.url || ""
+    nombreFam(famDe(p.id)), subDe(p.id), (asign[p.id]?.creativos || []).map((c) => `${c.titulo || c.tipo}: ${c.url}`).join(" | "), p.url || ""
   ]));
   const csv = "﻿" + filas.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
   const a = document.createElement("a");
