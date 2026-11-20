@@ -20,7 +20,7 @@ const HEADERS = {
   "User-Agent": "Dashboard Diverso (github.com/arielharari28-cloud/diverso-dashboard)",
   "Content-Type": "application/json",
 };
-const DIAS_VENTAS = 90; // ventana de pedidos que se analiza
+const DIAS_VENTAS = 400; // ventana de pedidos que se analiza (algo más de un año, para comparar períodos)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // La API permite 2 pedidos por segundo: esperamos entre llamadas.
@@ -62,6 +62,7 @@ async function main() {
   // Ventas por producto: solo pedidos pagos y no cancelados.
   const ahora = Date.now();
   const ventas = {};
+  const dias_ = {};
   for (const o of pedidos) {
     if (o.status === "cancelled") continue;
     if (o.payment_status && o.payment_status !== "paid") continue;
@@ -76,6 +77,11 @@ async function main() {
       if (dias <= 30) { v.u30 += q; v.f30 += fact; }
       if (dias <= 7) { v.u7 += q; v.f7 += fact; }
       if (!v.ultima || o.created_at > v.ultima) v.ultima = o.created_at;
+      // Ventas por día (fecha de Argentina, UTC-3) para elegir cualquier período en el dashboard
+      const dia = new Date(t - 3 * 3600000).toISOString().slice(0, 10);
+      const d = (dias_[id] ||= {});
+      const prev = d[dia] || [0, 0];
+      d[dia] = [prev[0] + q, Math.round(prev[1] + fact)];
     }
   }
 
@@ -109,6 +115,7 @@ async function main() {
       stock,
       stockInfinito: infinito,
       ventas: v,
+      ventasDia: dias_[id] || {}, // { "AAAA-MM-DD": [unidades, facturación] }
       activo: true,
       actualizado: admin.firestore.FieldValue.serverTimestamp(),
     });

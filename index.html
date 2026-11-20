@@ -33,10 +33,14 @@
   .kpi .l { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--gris); }
   .kpi .v { font-family:Poppins; font-weight:700; font-size:22px; margin-top:4px; }
   .kpi .v.rosa { color:var(--rosa); }
-  table { width:100%; border-collapse:collapse; }
-  th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--gris); font-weight:600; padding:10px 8px; border-bottom:1px solid var(--linea); cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:0; background:#fff; z-index:1; }
+  table { width:auto; border-collapse:collapse; }
+  .tabs { align-items:center; flex-wrap:wrap; }
+  .periodo { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  input[type=date] { font:14px Inter; padding:7px 10px; border:1px solid #d8d8d8; border-radius:8px; color:#111; }
+  .rango { font-size:12px; color:var(--gris); margin:-6px 0 12px; }
+  th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--gris); font-weight:600; padding:10px 14px; border-bottom:1px solid var(--linea); cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:0; background:#fff; z-index:1; }
   th.num, td.num { text-align:right; }
-  td { padding:10px 8px; border-bottom:1px solid var(--linea); vertical-align:middle; }
+  td { padding:10px 14px; border-bottom:1px solid var(--linea); vertical-align:middle; }
   tr:hover td { background:var(--fondo2); }
   .foto { width:96px; height:96px; border-radius:10px; object-fit:cover; background:#f1f1f1; display:block; cursor:zoom-in; transition:transform .15s; }
   .foto:hover { transform:scale(1.04); }
@@ -51,7 +55,7 @@
   .chip span { color:var(--gris); }
   .chip button { border:0; background:none; color:var(--rosa); cursor:pointer; font-size:14px; line-height:1; padding:0 4px; }
   .subs input { font-size:12px; padding:5px 10px; border-radius:40px; width:190px; }
-  .nombre { font-weight:600; max-width:280px; }
+  .nombre { font-weight:600; width:240px; max-width:240px; }
   .nombre a { color:#111; text-decoration:none; }
   .nombre a:hover { color:var(--azul); }
   .sub { font-size:12px; color:var(--gris); margin-top:2px; }
@@ -103,6 +107,22 @@
   <div class="tabs">
     <div class="tab on" data-tab="productos">Productos</div>
     <div class="tab" data-tab="familias">Familias</div>
+    <span style="flex:1"></span>
+    <div class="periodo">
+      <span class="sub">Período</span>
+      <select id="fPeriodo">
+        <option value="7">Últimos 7 días</option>
+        <option value="30" selected>Últimos 30 días</option>
+        <option value="90">Últimos 90 días</option>
+        <option value="mes">Mes actual</option>
+        <option value="mesAnt">Mes anterior</option>
+        <option value="anio">Este año</option>
+        <option value="custom">Elegir fechas…</option>
+      </select>
+      <span id="fechas" style="display:none">
+        <input type="date" id="fDesde"> <span class="sub">a</span> <input type="date" id="fHasta">
+      </span>
+    </div>
   </div>
 
   <main id="tProductos">
@@ -110,11 +130,6 @@
       <input type="text" id="fBuscar" placeholder="Buscar producto o categoría…" style="min-width:240px">
       <select id="fFamilia"></select>
       <select id="fSub" style="display:none"></select>
-      <select id="fPeriodo">
-        <option value="7">Últimos 7 días</option>
-        <option value="30" selected>Últimos 30 días</option>
-        <option value="90">Últimos 90 días</option>
-      </select>
       <select id="fEstado">
         <option value="pub">Publicados</option>
         <option value="todos">Todos</option>
@@ -130,6 +145,7 @@
       <button class="btn chico" id="loteOk">Asignar familia</button>
       <button class="btn sec chico" id="loteX">Cancelar</button>
     </div>
+    <div class="rango" id="rangoTxt"></div>
     <div class="kpis" id="kpis"></div>
     <div class="scroll">
       <table>
@@ -155,13 +171,8 @@
     <div class="barra">
       <input type="text" id="nuevaFam" placeholder="Nombre de la nueva familia (ej. Línea Aura)" style="min-width:300px">
       <button class="btn" id="btnNuevaFam">Crear familia</button>
-      <span style="flex:1"></span>
-      <select id="famPeriodo">
-        <option value="7">Últimos 7 días</option>
-        <option value="30" selected>Últimos 30 días</option>
-        <option value="90">Últimos 90 días</option>
-      </select>
     </div>
+    <div class="rango" id="rangoTxtFam"></div>
     <div id="listaFam"></div>
   </main>
 </div>
@@ -239,9 +250,37 @@ onAuthStateChanged(auth, (u) => {
 });
 
 // ---------- Cálculos ----------
-function metricas(p, periodo) {
+// Fechas en hora de Argentina, como texto AAAA-MM-DD
+const hoyAR = () => new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
+const sumarDias = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const fechaCorta = (iso) => iso.split("-").reverse().slice(0, 2).join("/") + "/" + iso.slice(2, 4);
+
+function rango() {
+  const per = $("fPeriodo").value, hoy = hoyAR();
+  const [y, m] = hoy.split("-").map(Number);
+  switch (per) {
+    case "7": case "30": case "90": return { desde: sumarDias(hoy, -(Number(per) - 1)), hasta: hoy };
+    case "mes": return { desde: hoy.slice(0, 8) + "01", hasta: hoy };
+    case "mesAnt": {
+      const ini = new Date(Date.UTC(m === 1 ? y - 1 : y, m === 1 ? 11 : m - 2, 1)).toISOString().slice(0, 10);
+      return { desde: ini, hasta: sumarDias(hoy.slice(0, 8) + "01", -1) };
+    }
+    case "anio": return { desde: `${y}-01-01`, hasta: hoy };
+    default: {
+      let d = $("fDesde").value || sumarDias(hoy, -29), h = $("fHasta").value || hoy;
+      if (d > h) [d, h] = [h, d];
+      return { desde: d, hasta: h };
+    }
+  }
+}
+let R = null; // rango vigente en este render
+
+function metricas(p) {
   const v = p.ventas || {};
-  const u = v["u" + periodo] || 0, f = v["f" + periodo] || 0;
+  let u = 0, f = 0;
+  for (const [dia, [uu, ff]] of Object.entries(p.ventasDia || {})) {
+    if (dia >= R.desde && dia <= R.hasta) { u += uu; f += ff; }
+  }
   const diasPub = p.creado ? Math.floor((Date.now() - new Date(p.creado)) / 86400000) : null;
   const ritmo = (v.u30 || 0) / 30;
   let diasStock = null;
@@ -258,15 +297,16 @@ function opcionesSub(fid, sel, primera) {
 
 function filtrados() {
   const q = $("fBuscar").value.trim().toLowerCase();
-  const fam = $("fFamilia").value, est = $("fEstado").value, per = $("fPeriodo").value;
+  const fam = $("fFamilia").value, est = $("fEstado").value;
   const sub = $("fSub").style.display === "none" ? "" : $("fSub").value;
+  R = rango();
   return productos
     .filter((p) => p.activo !== false)
     .filter((p) => est === "todos" || (est === "pub" ? p.publicado : !p.publicado))
     .filter((p) => !q || ((p.nombre || "") + " " + (p.categorias || []).join(" ")).toLowerCase().includes(q))
     .filter((p) => fam === "" || (fam === "__sin" ? !famDe(p.id) : famDe(p.id) === fam))
     .filter((p) => sub === "" || (sub === "__sin" ? !subDe(p.id) : subDe(p.id) === sub))
-    .map((p) => ({ p, m: metricas(p, per) }));
+    .map((p) => ({ p, m: metricas(p) }));
 }
 
 // ---------- Render productos ----------
@@ -290,6 +330,7 @@ function render() {
   if (loteSubs) { $("loteSub").innerHTML = opcionesSub($("loteFam").value, "", "— Sin subcategoría —"); $("loteSub").value = loteSubSel; if ($("loteSub").selectedIndex < 0) $("loteSub").value = ""; }
 
   const filas = filtrados();
+  $("rangoTxt").textContent = textoRango();
   const val = (r) => {
     switch (orden.campo) {
       case "nombre": return (r.p.nombre || "").toLowerCase();
@@ -347,7 +388,20 @@ function render() {
 }
 
 // ---------- Eventos de la tabla ----------
-["fBuscar", "fFamilia", "fSub", "fPeriodo", "fEstado", "loteFam"].forEach((id) => $(id).addEventListener("input", render));
+["fBuscar", "fFamilia", "fSub", "fEstado", "loteFam"].forEach((id) => $(id).addEventListener("input", render));
+// Período (vale para Productos y Familias)
+function cambioPeriodo() {
+  const custom = $("fPeriodo").value === "custom";
+  $("fechas").style.display = custom ? "" : "none";
+  if (custom && !$("fDesde").value) { const r = rango(); $("fDesde").value = r.desde; $("fHasta").value = r.hasta; }
+  $("fHasta").max = $("fDesde").max = hoyAR();
+  render();
+}
+["fPeriodo", "fDesde", "fHasta"].forEach((id) => $(id).addEventListener("input", cambioPeriodo));
+function textoRango() {
+  const dias = Math.round((new Date(R.hasta) - new Date(R.desde)) / 86400000) + 1;
+  return `Ventas del ${fechaCorta(R.desde)} al ${fechaCorta(R.hasta)} (${dias} día${dias > 1 ? "s" : ""}) · Días de stock se calcula con el ritmo de los últimos 30 días`;
+}
 document.querySelectorAll("th[data-ord]").forEach((th) => th.onclick = () => {
   const c = th.dataset.ord;
   orden = { campo: c, dir: orden.campo === c ? -orden.dir : (c === "nombre" || c === "familia" || c === "diasStock" ? 1 : -1) };
@@ -430,7 +484,6 @@ document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
   $("tFamilias").style.display = fam ? "block" : "none";
   if (fam) renderFamilias();
 });
-$("famPeriodo").oninput = renderFamilias;
 $("btnNuevaFam").onclick = async () => {
   const n = $("nuevaFam").value.trim(); if (!n) return;
   if (familias.some((f) => f.nombre.toLowerCase() === n.toLowerCase())) { $("nuevaFam").select(); return; }
@@ -440,17 +493,18 @@ $("btnNuevaFam").onclick = async () => {
 $("nuevaFam").onkeydown = (e) => { if (e.key === "Enter") $("btnNuevaFam").onclick(); };
 
 function renderFamilias() {
-  const per = $("famPeriodo").value;
+  R = rango();
+  $("rangoTxtFam").textContent = textoRango();
   const act = productos.filter((p) => p.activo !== false);
   const grupos = [...familias.map((f) => ({ id: f.id, nombre: f.nombre })), { id: "", nombre: "Sin familia" }].map((g) => {
     const ps = act.filter((p) => famDe(p.id) === g.id || (!g.id && !familias.some((f) => f.id === famDe(p.id))));
     let u = 0, f = 0, stock = 0, cr = 0;
-    ps.forEach((p) => { const m = metricas(p, per); u += m.u; f += m.f; stock += p.stockInfinito ? 0 : (p.stock || 0); cr += asign[p.id]?.creativos?.length || 0; });
+    ps.forEach((p) => { const m = metricas(p); u += m.u; f += m.f; stock += p.stockInfinito ? 0 : (p.stock || 0); cr += asign[p.id]?.creativos?.length || 0; });
     // Métricas por subcategoría
     const subs = g.id ? [...subsDe(g.id), ""].map((s) => {
       const pss = ps.filter((p) => s ? subDe(p.id) === s : !subsDe(g.id).includes(subDe(p.id)));
       let su = 0, sf = 0;
-      pss.forEach((p) => { const m = metricas(p, per); su += m.u; sf += m.f; });
+      pss.forEach((p) => { const m = metricas(p); su += m.u; sf += m.f; });
       return { nombre: s, n: pss.length, u: su, f: sf };
     }) : [];
     return { ...g, n: ps.length, u, f, stock, cr, subs };
@@ -525,9 +579,10 @@ $("listaFam").addEventListener("click", async (e) => {
 
 // ---------- Exportar ----------
 $("btnExport").onclick = () => {
-  const per = $("fPeriodo").value;
-  const filas = [["ID", "Producto", "Categorías", "Publicado", "Precio", `Unidades ${per}d`, `Facturación ${per}d`, "Stock", "Días publicado", "Días de stock", "Familia", "Subcategoría", "Creativos", "Link"]];
-  filtrados().forEach(({ p, m }) => filas.push([
+  const lista = filtrados();
+  const per = `${fechaCorta(R.desde)} al ${fechaCorta(R.hasta)}`;
+  const filas = [["ID", "Producto", "Categorías", "Publicado", "Precio", `Unidades ${per}`, `Facturación ${per}`, "Stock", "Días publicado", "Días de stock", "Familia", "Subcategoría", "Creativos", "Link"]];
+  lista.forEach(({ p, m }) => filas.push([
     p.id, p.nombre, (p.categorias || []).join(" / "), p.publicado ? "Sí" : "No", p.precio ?? "",
     m.u, Math.round(m.f), p.stockInfinito ? "Sin control" : (p.stock ?? ""), m.diasPub ?? "",
     p.stockInfinito || m.diasStock == null ? "" : (m.diasStock === Infinity ? "Sin ventas" : Math.round(m.diasStock)),
